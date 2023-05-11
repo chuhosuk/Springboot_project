@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+    <!-- namespace="패키지명.인터페이스" -->
+<mapper namespace="spring.mvc.pj_126_chs.dao.BoardDAO">
+	
+	
+	<!-- CDATA : Charactier Data의 의미 : 면접
+		      CDATA 영역에 작성된 특수문자데이터는 단순한 문자데이터(Character Data)로 인식하므로
+		      XML 파서기가 처리하지 않고, 데이터베이스에 그대로 전달함으로써 에러가 발생하지 않도록 한다.
+		      즉 <>와 같은 부등호를 xml 태그로 인식하지 않고, 단순 문자로 인식(부등호로 인식)하도록 한다.
+     -->
+     
+	<!-- 게시글 목록 (댓글 갯수 포함) -->
+   <select id="boardList" parameterType="java.util.Map" resultType="spring.mvc.pj_126_chs.dto.BoardDTO">
+      <![CDATA[
+      SELECT *  
+        FROM (  
+            SELECT A.*, rownum AS rn 
+                 FROM (SELECT num, title, content, writer, password, readCnt, regDate,  
+                         (SELECT COUNT(*) FROM mvc_board_comment_tbl WHERE board_num = B.num) comment_count
+                        FROM mvc_board_tbl B 
+                     WHERE show='y'   
+                       ORDER BY num DESC) A  
+             )    
+       WHERE rn >= #{start} 
+         AND rn <= #{end}
+      ]]>
+   </select>
+   
+   <!-- 게시글 갯수 구하기 -->
+   <select id="boardCnt" resultType="int">
+      SELECT COUNT(*) as cnt FROM mvc_board_tbl
+   </select>
+   
+   <update id="plusReadCnt" parameterType="int">
+   		<![CDATA[
+   			UPDATE mvc_board_tbl set readCnt=readCnt+1 WHERE num = #{num}
+   		]]>
+   </update>
+
+	<select id="getBoardDetail" parameterType="int" resultType="spring.mvc.pj_126_chs.dto.BoardDTO">
+		select * from mvc_board_tbl where num=#{num}
+	</select>
+	
+	
+	
+	<select id="password_chk" parameterType="java.util.Map" resultType="int">
+		select count(*) from mvc_board_tbl where num=#{num} and password=#{password}
+	</select>
+	
+	<update id="updateBoard" parameterType="spring.mvc.pj_126_chs.dto.BoardDTO">
+		UPDATE mvc_board_tbl set content=#{content}, title=#{title}, password=#{password} WHERE num = #{num}
+	</update>
+
+	<select id="commentList" parameterType="int" resultType="spring.mvc.pj_126_chs.dto.BoardCommentDTO">
+		SELECT * FROM mvc_board_comment_tbl WHERE board_num = #{board_num} order by comment_num asc
+	</select>
+	
+	<insert id="commentInsert" parameterType="spring.mvc.pj_126_chs.dto.BoardCommentDTO">
+		INSERT INTO mvc_board_comment_tbl(COMMENT_num, board_num, writer, content) 
+			VALUES((SELECT NVL(MAX(COMMENT_num)+1, 1) FROM mvc_board_comment_tbl), #{board_num}, #{writer}, #{content})
+	</insert>
+	
+	<update id="deleteBoard" parameterType="int">
+		update mvc_board_tbl set show='n' where num=#{num}
+	</update>
+	
+	<insert id="insertBoard" parameterType="spring.mvc.pj_126_chs.dto.BoardCommentDTO">
+		INSERT INTO MVC_BOARD_TBL(NUM, TITLE, CONTENT, WRITER, PASSWORD) 
+			VALUES((SELECT NVL(MAX(NUM)+1, 1) FROM MVC_BOARD_TBL),#{title}, #{content}, #{writer}, #{password})
+	</insert>
+	
+	
+
+</mapper> 
